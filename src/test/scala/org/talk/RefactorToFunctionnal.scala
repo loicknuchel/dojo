@@ -1,4 +1,4 @@
-package org.sample
+package org.talk
 
 import org.scalatest.{FunSpec, Matchers}
 
