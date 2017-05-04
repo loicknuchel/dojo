@@ -131,19 +131,14 @@ class GameOfLifeSpec extends FunSpec with Matchers {
         List(Dead, Live, Live, Dead, Dead),
         List(Dead, Live, Live, Live, Dead),
         List(Dead, Dead, Dead, Dead, Dead))
-      val step2 = List(
-        List(Dead, Live, Live, Dead, Dead),
-        List(Live, Dead, Dead, Live, Dead),
-        List(Dead, Live, Dead, Live, Dead),
-        List(Dead, Dead, Live, Dead, Dead))
-      val step3 = List(
+      val end = List(
         List(Dead, Live, Live, Dead, Dead),
         List(Live, Dead, Dead, Live, Dead),
         List(Dead, Live, Dead, Live, Dead),
         List(Dead, Dead, Live, Dead, Dead))
       evolve(start) shouldBe step1
-      evolve(step1) shouldBe step2
-      evolve(step2) shouldBe step3
+      evolve(step1) shouldBe end
+      evolve(end) shouldBe end
     }
 
     ignore("should play") {
