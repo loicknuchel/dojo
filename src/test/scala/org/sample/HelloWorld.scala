@@ -7,7 +7,7 @@ import org.scalatest.{FunSpec, Matchers}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class HelloWorldSpec extends FunSpec with Matchers with ScalaFutures {
+class HelloWorld extends FunSpec with Matchers with ScalaFutures {
 
   describe("Hello World") {
     it("should say Hello") {

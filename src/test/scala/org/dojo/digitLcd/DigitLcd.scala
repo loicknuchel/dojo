@@ -7,7 +7,7 @@ import org.scalatest.{FunSpec, Matchers}
   * Write a function that take a number and display it as an LDC screen (alarm clock)
   */
 // May 2nd 2017 at Criteo coding dojo
-class DigitLcdSpec extends FunSpec with Matchers {
+class DigitLcd extends FunSpec with Matchers {
   type LcdString = String // a five line string representing the LCD display
 
   def formatNumber(in: Int): String = {
