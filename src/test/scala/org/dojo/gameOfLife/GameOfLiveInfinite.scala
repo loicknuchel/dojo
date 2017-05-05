@@ -12,40 +12,34 @@ import scala.util.Random
   */
 class GameOfLiveInfinite extends FunSpec with Matchers {
 
-  sealed trait Cell
+  sealed abstract class Cell(val symbol: Char)
 
-  case object Dead extends Cell
+  case object Dead extends Cell(' ')
 
-  case object Live extends Cell
+  case object Live extends Cell('X')
 
-  case class Format(y: Int, x: Int, height: Int, width: Int)
+  case class Format(yMin: Int, yMax: Int, xMin: Int, xMax: Int)
+
+  object Format {
+    def apply(ys: Iterable[Int], xs: Iterable[Int]): Format = new Format(ys.min, ys.max, xs.min, xs.max)
+  }
 
   case class Board(cells: Map[Int, Seq[Int]], fmt: Option[Format] = None) {
     def cell(y: Int, x: Int): Cell =
       if (cells.getOrElse(y, List()).contains(x)) Live else Dead
 
     def format: String = {
-      def formatCell(cell: Cell): String = if (cell == Dead) " " else "X"
-
-      def format(board: Board, yMin: Int, yMax: Int, xMin: Int, xMax: Int): String = {
-        val header = "+" + (xMin to xMax).map(_ => "-").mkString + "+\n"
-        (header + (yMin to yMax).map { y =>
-          "|" + (xMin to xMax).map(x => formatCell(board.cell(y, x))).mkString + "|\n"
+      def format(board: Board, f: Format): String = {
+        val header = "+" + (f.xMin until f.xMax).map(_ => "-").mkString + "+\n"
+        (header + (f.yMin until f.yMax).map { y =>
+          "|" + (f.xMin until f.xMax).map(x => board.cell(y, x).symbol).mkString + "|\n"
         }.mkString + header).trim
       }
 
-      if (cells.isEmpty) {
-        fmt.map { f =>
-          val (yMin, yMax, xMin, xMax) = (f.y, f.y + f.height - 1, f.x, f.x + f.width - 1)
-          format(this, yMin, yMax, xMin, xMax)
-        }.getOrElse("++\n++")
-      }
-      else {
-        val (yMin, yMax, xMin, xMax) = fmt.map { f => (f.y, f.y + f.height - 1, f.x, f.x + f.width - 1) }.getOrElse {
-          (cells.keys.min, cells.keys.max, cells.flatMap(_._2).min, cells.flatMap(_._2).max)
-        }
-        format(this, yMin, yMax, xMin, xMax)
-      }
+      if (cells.isEmpty) format(this, fmt.getOrElse(Format(0, 0, 0, 0)))
+      else format(this, Format(
+        cells.keys ++ fmt.map(_.yMin) ++ fmt.map(_.yMax),
+        cells.flatMap(_._2) ++ fmt.map(_.xMin) ++ fmt.map(_.xMax)))
     }
 
     def evolve: Board = {
@@ -70,13 +64,10 @@ class GameOfLiveInfinite extends FunSpec with Matchers {
         Board(
           (yMin to yMax).flatMap { y =>
             (xMin to xMax).flatMap { x =>
-              if (alive(countAlive(this, y, x), cell(y, x)) == Live)
-                Some(y -> x)
-              else
-                None
+              if (alive(countAlive(this, y, x), cell(y, x)) == Live) Some(y -> x) else None
             }
           },
-          fmt // TODO : change fmt with new sizes ?
+          fmt
         )
       }
     }
@@ -90,9 +81,9 @@ class GameOfLiveInfinite extends FunSpec with Matchers {
       val lines = game.split("\n")
       Board(lines.zipWithIndex.flatMap { case (row, y) =>
         row.zipWithIndex.flatMap { case (c, x) =>
-          if (c == 'X') Some(y - 1, x - 1) else None
+          if (c == Live.symbol) Some(y - 1, x - 1) else None
         }
-      }, Some(Format(0, 0, lines.length - 2, lines.headOption.map(_.length - 2).getOrElse(0))))
+      }, Some(Format(0, Math.max(0, lines.length - 2), 0, lines.map(_.length - 2).max)))
     }
   }
 

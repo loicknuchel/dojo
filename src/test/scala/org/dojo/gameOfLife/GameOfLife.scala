@@ -13,24 +13,23 @@ import scala.util.Random
 // May 3rd 2017 at Arolla coding dojo
 class GameOfLife extends FunSpec with Matchers {
 
-  sealed trait Cell
+  sealed abstract class Cell(val symbol: Char)
 
-  case object Dead extends Cell
+  case object Dead extends Cell(' ')
 
-  case object Live extends Cell
-
-  type Neighborhood = Seq[Seq[Cell]]
+  case object Live extends Cell('X')
 
   case class Board(cells: Seq[Seq[Cell]]) {
     def format: String = {
-      def formatCell(cell: Cell): String = if (cell == Dead) " " else "X"
-      def formatRow(row: Seq[Cell]): String = "|" + row.map(formatCell).mkString + "|\n"
+      def formatRow(row: Seq[Cell]): String = "|" + row.map(_.symbol).mkString + "|\n"
 
       val header = "+" + cells.head.map(_ => "-").mkString + "+\n"
       (header + cells.map(formatRow).mkString + header).trim
     }
 
     def evolve: Board = {
+      type Neighborhood = Seq[Seq[Cell]]
+
       def countNeighbors(cell: Cell, aliveCount: Int): Int =
         if (cell == Dead) aliveCount else aliveCount - 1
 
@@ -58,7 +57,7 @@ class GameOfLife extends FunSpec with Matchers {
     def parse(game: String): Board = {
       Board(game.split("\n").drop(1).dropRight(1).map { row =>
         row.drop(1).dropRight(1).map { c =>
-          if(c == 'X') Live else Dead
+          if (c == Live.symbol) Live else Dead
         }
       })
     }
