@@ -36,7 +36,7 @@ class CorrectByDesign extends FunSpec with Matchers {
   }
 
   describe("useful types") {
-    it("basic types does not giv insight") {
+    it("basic types does not give any insight") {
       trait Constraint
       case class Link(from: String, action: String, to: String, constraints: List[Constraint])
 
