@@ -1,7 +1,11 @@
 package org.talk
 
+import java.util.concurrent.{ScheduledExecutorService, ScheduledFuture}
+
 import org.scalatest.{FunSpec, Matchers}
 
+import scala.concurrent.Promise
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.util.Try
 
 object RefactorToFunctionnal extends FunSpec with Matchers {
@@ -344,13 +348,13 @@ object RefactorToFunctionnal extends FunSpec with Matchers {
     // from https://www.youtube.com/watch?v=XhcgCF0xXRs
     /**
       * Spec :
-      *   GET /endpoint?number=5 should return the number incremented by 5 (10 in the example)
+      * GET /endpoint?number=5 should return the number incremented by 5 (10 in the example)
       */
 
     it("works with imperative code") {
       def addFiveAction(params: Map[String, String]): Int = {
         val number = params("number")
-        if(number != "") {
+        if (number != "") {
           number.toInt + 5
         } else {
           0
@@ -365,8 +369,8 @@ object RefactorToFunctionnal extends FunSpec with Matchers {
     it("is now Pokemon Driven Development (Gotta Catch 'Em All)") {
       def addFiveAction(params: Map[String, String]): Int = {
         val number = params("number")
-        if(number != null) {
-          if(number != "") {
+        if (number != null) {
+          if (number != "") {
             try {
               number.toInt + 5
             } catch {
@@ -385,11 +389,11 @@ object RefactorToFunctionnal extends FunSpec with Matchers {
       def addNumbersAction(params: Map[String, String]): Int = {
         val n1 = params("n1")
         val n2 = params("n2")
-        if(n1 != null) {
-          if(n1 != "") {
+        if (n1 != null) {
+          if (n1 != "") {
             try {
               val i1 = n1.toInt
-              if(n2 != null) {
+              if (n2 != null) {
                 if (n1 != "") {
                   try {
                     val i2 = n2.toInt
@@ -420,8 +424,10 @@ object RefactorToFunctionnal extends FunSpec with Matchers {
     it("encode implicits in types") {
       // a Map return *EVENTUALLY* a value for a key
       def getKey(m: Map[String, String], key: String): Option[String] = m.get(key)
+
       // a String can *EVENTUALLY* be converted in a number
       def parseInt(s: String): Option[Int] = Try(s.toInt).toOption
+
       // we want to compose them
       def getInt(m: Map[String, String], key: String): Option[Int] = getKey(m, key).flatMap(parseInt)
 
@@ -436,6 +442,50 @@ object RefactorToFunctionnal extends FunSpec with Matchers {
       // for example, how many tests for:
       //  - a function Int -> Int ? 2^32 ! If function is deterministic (pure)
       //  - a function String -> String ? Infinity !!!
+    }
+  }
+
+  describe("Scheduler") {
+    class CancelableFuture[T](promise: Promise[T], cancelMethod: Boolean => Boolean) {
+      def cancel(mayInterruptIfRunning: Boolean = false): Boolean =
+        cancelMethod(mayInterruptIfRunning)
+    }
+
+    it("has some code duplication") {
+      class Scheduler(underlying: ScheduledExecutorService) {
+        def scheduleOnce[T](delay: FiniteDuration)(operation: => T): CancelableFuture[T] = {
+          val promise = Promise[T]()
+          val scheduledFuture = underlying.schedule(new Runnable {
+            override def run(): Unit = promise.complete(Try(operation))
+          }, delay.length, delay.unit)
+          new CancelableFuture(promise, scheduledFuture.cancel)
+        }
+
+        def scheduleAtFixedRate(interval: FiniteDuration, delay: Long = 0)(operation: => Unit): CancelableFuture[Unit] = {
+          val promise = Promise[Unit]()
+          val scheduledFuture = underlying.scheduleAtFixedRate(new Runnable {
+            override def run(): Unit = promise.complete(Try(operation))
+          }, delay, interval.length, interval.unit)
+          new CancelableFuture(promise, scheduledFuture.cancel)
+        }
+      }
+    }
+    it("is DRY") {
+      class Scheduler private(private val underlying: ScheduledExecutorService) {
+        def scheduleOnce[T](delay: FiniteDuration)(operation: => T): CancelableFuture[T] =
+          schedule(operation, underlying.schedule(_, delay.length, delay.unit))
+
+        def scheduleAtFixedRate(interval: FiniteDuration, delay: Long = 0)(operation: => Unit): CancelableFuture[Unit] =
+          schedule(operation, underlying.scheduleAtFixedRate(_, delay, interval.length, interval.unit))
+
+        private def schedule[T](operation: => T, sched: Runnable => ScheduledFuture[_]): CancelableFuture[T] = {
+          val promise = Promise[T]()
+          val scheduledFuture = sched(new Runnable {
+            override def run(): Unit = promise.complete(Try(operation))
+          })
+          new CancelableFuture(promise, scheduledFuture.cancel)
+        }
+      }
     }
   }
 }
