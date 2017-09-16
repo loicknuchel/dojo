@@ -38,7 +38,7 @@ object Typeclassopedia {
       loop(n, BigInt(0), BigInt(1))
     }
 
-    val res: Future[BigInt] = fib[Future](40)
+    //val res: Future[BigInt] = fib[Future](40)
   }
 
   object ApplicativeExemple {
