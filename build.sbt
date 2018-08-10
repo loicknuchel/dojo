@@ -1,9 +1,9 @@
-name := "dojo"
+name := "scala-dojo"
 
-version := "1.0"
+version := "0.1"
 
-scalaVersion := "2.12.2"
+scalaVersion := "2.12.6"
 
 libraryDependencies ++= List(
-  "org.scalatest" %% "scalatest" % "3.0.1" % "test"
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 )
